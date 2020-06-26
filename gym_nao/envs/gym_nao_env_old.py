@@ -5,6 +5,7 @@ from gym.spaces import Box, Tuple, Discrete
 
 import vision_definitions as vd
 from naoqi import ALProxy
+import qi
 
 import motion as mtn
 import numpy as np
@@ -59,6 +60,13 @@ cam_proxy = ALProxy('ALVideoDevice', IP, PORT)
 posture_proxy = ALProxy('ALRobotPosture', IP, PORT)
 # motion_proxy.angleInterpolationWithSpeed()
 
+# ses = qi.Session()
+# ses.connect(IP)
+# per = qi.PeriodicTask()
+# motion_proxy = ses.service('ALMotion')
+# posture_proxy = ses.service('ALRobotPosture')
+# cam_proxy = ses.service('ALVideoDevice')
+
 
 class GymNaoEnv(gym.Env):
 
@@ -85,8 +93,7 @@ class GymNaoEnv(gym.Env):
 		
 		# all possible actions for an agent (forward, turn, kick)
 		# self.action_space = spaces.Box(low = np.array([+0.0, (-math.pi/12), 0.0]), high = np.array([+0.4, (+math.pi/12), 1.0]), dtype = np.float64)
-		self.action_space = Tuple(spaces = 
-		(Box(low = np.array([+0.0, (-math.pi/12)]), high = np.array([+0.4, (+math.pi/12)]), dtype = np.float64),
+		self.action_space = Tuple(spaces = (Box(low = np.array([+0.0, (-math.pi/12)]), high = np.array([+0.4, (+math.pi/12)]), dtype = np.float64),
 		Discrete(2)))
 
 		# environment's data to be observed by the agent; 
@@ -98,7 +105,7 @@ class GymNaoEnv(gym.Env):
 	def step(self, action):
 		self.step_index += 1
 		step_reward = 0.0
-
+		print('TEST')
 		# DON'T FORGET ABOUT KICK AS WELL
 		self.x = action[0]
 		self.angle = action[1]
@@ -151,8 +158,6 @@ class GymNaoEnv(gym.Env):
 
 		self.state = [self.prev_red, self.prev_blue]
 		print(self.state)
-
-		motion_proxy.move(0.0, 0.0, 180.0 * almath.TO_RAD)
 		
 		return self.step(None)[0]
 
@@ -166,29 +171,55 @@ class GymNaoEnv(gym.Env):
 	def _scan_surroundings(self):
 		# scan environment
 		motion_proxy.setStiffnesses("Head", 1.0)
-
 		red = []
 		blue = []
-		print(red, blue)
-		
+		# print(red, blue)
 
-		for param in HEAD_PARAMS:
-			angle = param['angle']
-			time = param['time']
-			# motion_proxy.angleInterpolationWithSpeed(names, angle, time, absolute)
-			motion_proxy.angleInterpolationWithSpeed(names, angle, 0.2)
-			tm.sleep(0.5)
-			if time != 4.0:
-				for i in [0, 1]:
-					filename = 'img_' + str(int(time)) + ('_top' if i == 0 else '_bottom')  + '.png' 
-					self._take_image(i, filename)
-					# red.append(self._get_balls(filename, 'red', i))
-					# blue.append(self._get_balls(filename, 'blue', i))
-					for r in self._get_balls(filename, 'red', i):
-						red.append(r)
-					for b in self._get_balls(filename, 'blue', i):
-						blue.append(b)
+		(red, blue).append(self._turn_n_shot(0))
+		(red, blue).append(self._turn_n_shot(0))
+		(red, blue).append(self._turn_n_shot(0))
+
+	
+
+		# for param in HEAD_PARAMS:
+		# 	angle = param['angle']
+		# 	time = param['time']
+		# 	# motion_proxy.angleInterpolationWithSpeed(names, angle, time, absolute)
+		# 	motion_proxy.angleInterpolationWithSpeed(names, angle, 0.2)
+		# 	# motion.angleInterpolationWithSpeed("Head", [-maxAngleScan, 0.035], 0.1)
+		# 	tm.sleep(0.5)
+		# 	if time != 4.0:
+		# 		for i in [0, 1]:
+		# 			filename = 'img_' + str(int(time)) + ('_top' if i == 0 else '_bottom')  + '.png' 
+		# 			self._take_image(i, filename)
+		# 			# red.append(self._get_balls(filename, 'red', i))
+		# 			# blue.append(self._get_balls(filename, 'blue', i))
+		# 			for r in self._get_balls(filename, 'red', i):
+		# 				red.append(r)
+		# 			for b in self._get_balls(filename, 'blue', i):
+		# 				blue.append(b)
 		motion_proxy.setStiffnesses("Head", 0.0)
+		return red, blue
+
+	def _turn_n_shot(self, i):
+		red = []
+		blue = []
+
+		angle, time, filename0, filename1 = self._get_params(i)
+		motion_proxy.angleInterpolationWithSpeed(names, angle, time)
+
+		self._take_image(0, filename0) # top camera
+		self._take_image(1, filename1) # bottom camera
+
+		for r in self._get_balls(filename0, 'red', 0):
+			red.append(r)
+		for r in self._get_balls(filename0, 'red', 0):
+			red.append(r)
+		for b in self._get_balls(filename1, 'blue', 1):
+			blue.append(b)
+		for b in self._get_balls(filename1, 'blue', 1):
+			blue.append(b)
+
 		return red, blue
 
 	def _take_image(self, cam_id, filename = 'default.png'):
@@ -306,11 +337,12 @@ class GymNaoEnv(gym.Env):
 
 		posture_proxy.goToPosture('StandInit', 0.5)
 
-
-
-
-
-
+	def _get_params(self, i):
+		angle = HEAD_PARAMS[i]['angle']
+		time = HEAD_PARAMS[i]['time']
+		filename0 = 'img_' + str(int(time)) + '_top.png'
+		filename1 = 'img_' + str(int(time)) + '_bottom.png'
+		return angle, time, filename0, filename1
 
 gym = GymNaoEnv()
 gym.reset()

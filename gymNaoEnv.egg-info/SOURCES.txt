@@ -1,0 +1,7 @@
+README.md
+setup.py
+gymNaoEnv.egg-info/PKG-INFO
+gymNaoEnv.egg-info/SOURCES.txt
+gymNaoEnv.egg-info/dependency_links.txt
+gymNaoEnv.egg-info/requires.txt
+gymNaoEnv.egg-info/top_level.txt
