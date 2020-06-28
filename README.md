@@ -1,5 +1,3 @@
-��# NAOGymEnv
-
 ## To install the environment run:
 ```
 pip install -e ./gym_nao
