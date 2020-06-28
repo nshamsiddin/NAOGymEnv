@@ -4,7 +4,7 @@
 ```
 pip install -e ./gym_nao
 ```
-##To use the environment
+## To use the environment
 ```
 import gymNaoEnv
 NAME = "gym-nao-v0"
