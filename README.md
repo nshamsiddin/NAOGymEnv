@@ -6,6 +6,7 @@ pip install -e ./gym_nao
 ```
 ## To use the environment
 ```
+import gym
 import gymNaoEnv
 NAME = "gym-nao-v0"
 env = gym.make(params.env_name)
